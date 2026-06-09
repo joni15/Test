@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bonnes Affaires CH — Offres alimentaires du jour</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>🇨🇭 Bonnes Affaires CH</h1>
+      <p class="tagline">Les meilleures offres alimentaires en Suisse, agrégées chaque jour</p>
+      <p id="last-refresh" class="last-refresh"></p>
+    </div>
+  </header>
+
+  <main>
+    <div id="sample-banner" class="sample-banner" hidden>
+      ⚠️ Données de démonstration — aucune source en ligne n'a pu être contactée.
+    </div>
+
+    <section class="filters">
+      <input type="search" id="search" placeholder="Rechercher un produit…">
+      <select id="retailer">
+        <option value="">Tous les détaillants</option>
+      </select>
+      <select id="category">
+        <option value="">Toutes les catégories</option>
+      </select>
+      <select id="sort">
+        <option value="discount">Meilleur rabais</option>
+        <option value="price">Prix croissant</option>
+        <option value="retailer">Par détaillant</option>
+      </select>
+      <label class="discount-filter">
+        Rabais min. <span id="min-discount-label">0%</span>
+        <input type="range" id="min-discount" min="0" max="70" step="5" value="0">
+      </label>
+      <button id="refresh-btn" title="Forcer une nouvelle agrégation">↻ Actualiser</button>
+    </section>
+
+    <p id="count" class="count"></p>
+    <div id="deals" class="deals-grid"></div>
+    <p id="empty" class="empty" hidden>Aucune offre ne correspond à ces filtres.</p>
+  </main>
+
+  <footer>
+    <p>Sources : Migros · Coop · Denner · Lidl · Aldi — mise à jour quotidienne à 06h00.</p>
+    <p>Les prix affichés sont fournis à titre indicatif ; seuls les prix en magasin font foi.</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
