@@ -50,6 +50,32 @@ class BaseScraper(ABC):
             follow_redirects=True,
         )
 
+    def _get_html(self, url: str, wait_selector: str | None = None) -> str:
+        """Récupère le HTML d'une page : httpx d'abord, navigateur en secours.
+
+        Les pages d'actions sont souvent derrière une protection anti-bot
+        et/ou rendues en JavaScript ; si la requête HTTP simple échoue ou
+        renvoie une page sans données, on recharge via Playwright.
+        """
+        html = ""
+        try:
+            with self._client() as client:
+                resp = client.get(url)
+                resp.raise_for_status()
+                html = resp.text
+        except httpx.HTTPError as exc:
+            logger.info("%s: requête HTTP simple refusée (%s)", self.retailer, exc)
+
+        if html and JSONLD_RE.search(html):
+            return html
+
+        from .browser import PLAYWRIGHT_AVAILABLE, fetch_html_browser
+
+        if PLAYWRIGHT_AVAILABLE:
+            logger.info("%s: tentative via navigateur headless", self.retailer)
+            return fetch_html_browser(url, wait_selector=wait_selector)
+        return html
+
 
 JSONLD_RE = re.compile(
     r'<script[^>]*type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',

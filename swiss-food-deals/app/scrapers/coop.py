@@ -11,7 +11,5 @@ class CoopScraper(BaseScraper):
     retailer = "Coop"
 
     def _fetch(self) -> list[Deal]:
-        with self._client() as client:
-            resp = client.get(ACTIONS_URL)
-            resp.raise_for_status()
-        return extract_jsonld_products(resp.text, self.retailer, ACTIONS_URL)
+        html = self._get_html(ACTIONS_URL)
+        return extract_jsonld_products(html, self.retailer, ACTIONS_URL)

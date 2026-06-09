@@ -7,13 +7,18 @@ from concurrent.futures import ThreadPoolExecutor
 from . import database
 from .models import Deal
 from .scrapers import ALL_SCRAPERS
+from .scrapers.remote_feed import RemoteFeedScraper
 from .scrapers.sample_data import sample_deals
 
 logger = logging.getLogger(__name__)
 
 
-def collect_deals() -> tuple[list[Deal], list[str]]:
-    """Interroge toutes les sources en parallèle et fusionne les résultats."""
+def collect_deals(use_remote_feed: bool = True) -> tuple[list[Deal], list[str]]:
+    """Interroge toutes les sources en parallèle et fusionne les résultats.
+
+    Ordre de repli : scrapers en direct → flux distant publié par GitHub
+    Actions → données de démonstration.
+    """
     scrapers = [cls() for cls in ALL_SCRAPERS]
     sources: list[str] = []
     merged: dict[str, Deal] = {}
@@ -26,6 +31,14 @@ def collect_deals() -> tuple[list[Deal], list[str]]:
             sources.append(retailer)
         for deal in deals:
             merged.setdefault(deal.dedupe_key(), deal)
+
+    if not merged and use_remote_feed:
+        logger.warning("Aucun scraper en direct n'a répondu — essai du flux distant")
+        feed_deals = RemoteFeedScraper().fetch()
+        for deal in feed_deals:
+            merged.setdefault(deal.dedupe_key(), deal)
+        if merged:
+            sources = ["flux distant"]
 
     if not merged:
         logger.warning(

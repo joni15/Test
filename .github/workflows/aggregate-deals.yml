@@ -1,0 +1,43 @@
+name: Agrégation quotidienne des offres alimentaires
+
+on:
+  schedule:
+    # 04:15 UTC ≈ 06:15 à Zurich (été) — les crons planifiés ne tournent
+    # que sur la branche par défaut.
+    - cron: "15 4 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installer les dépendances
+        working-directory: swiss-food-deals
+        run: |
+          pip install -r requirements.txt playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Scraper les offres
+        working-directory: swiss-food-deals
+        run: python -m app.cli aggregate --output ../data/deals.json
+
+      - name: Committer le flux
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/deals.json
+          if git diff --cached --quiet; then
+            echo "Aucun changement"
+          else
+            git commit -m "Mise à jour quotidienne des offres ($(date -u +%F))"
+            git push
+          fi

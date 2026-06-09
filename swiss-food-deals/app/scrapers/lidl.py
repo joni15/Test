@@ -11,7 +11,5 @@ class LidlScraper(BaseScraper):
     retailer = "Lidl"
 
     def _fetch(self) -> list[Deal]:
-        with self._client() as client:
-            resp = client.get(OFFERS_URL)
-            resp.raise_for_status()
-        return extract_jsonld_products(resp.text, self.retailer, OFFERS_URL)
+        html = self._get_html(OFFERS_URL)
+        return extract_jsonld_products(html, self.retailer, OFFERS_URL)
