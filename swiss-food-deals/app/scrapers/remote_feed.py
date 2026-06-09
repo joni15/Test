@@ -16,9 +16,11 @@ from datetime import date
 from ..models import Deal
 from .base import BaseScraper
 
+# Le workflow planifié ne tourne que sur la branche par défaut du dépôt ;
+# c'est donc là que data/deals.json est publié.
 DEFAULT_FEED_URL = (
     "https://raw.githubusercontent.com/joni15/Test/"
-    "claude/swiss-food-deals-app-sepkyh/data/deals.json"
+    "claude/address-sniping-check-Idthi/data/deals.json"
 )
 
 
