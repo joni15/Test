@@ -50,12 +50,13 @@ class BaseScraper(ABC):
             follow_redirects=True,
         )
 
-    def _get_html(self, url: str, wait_selector: str | None = None) -> str:
-        """Récupère le HTML d'une page : httpx d'abord, navigateur en secours.
+    def _harvest(self, url: str, follow_link_pattern: str | None = None) -> list[Deal]:
+        """Stratégie commune de récolte sur une page d'actions.
 
-        Les pages d'actions sont souvent derrière une protection anti-bot
-        et/ou rendues en JavaScript ; si la requête HTTP simple échoue ou
-        renvoie une page sans données, on recharge via Playwright.
+        1. Requête HTTP simple + extraction JSON-LD (rapide, sans navigateur).
+        2. Sinon : rendu Playwright, puis JSON-LD du HTML rendu **et**
+           extraction heuristique des réponses XHR/JSON capturées — c'est
+           par ces API internes que les sites chargent leurs offres.
         """
         html = ""
         try:
@@ -66,15 +67,26 @@ class BaseScraper(ABC):
         except httpx.HTTPError as exc:
             logger.info("%s: requête HTTP simple refusée (%s)", self.retailer, exc)
 
-        if html and JSONLD_RE.search(html):
-            return html
+        if html:
+            deals = extract_jsonld_products(html, self.retailer, url)
+            if deals:
+                return deals
 
-        from .browser import PLAYWRIGHT_AVAILABLE, fetch_html_browser
+        from .browser import PLAYWRIGHT_AVAILABLE, dump_debug, render_page
+        from .json_products import extract_products_from_json
 
-        if PLAYWRIGHT_AVAILABLE:
-            logger.info("%s: tentative via navigateur headless", self.retailer)
-            return fetch_html_browser(url, wait_selector=wait_selector)
-        return html
+        if not PLAYWRIGHT_AVAILABLE:
+            return []
+
+        logger.info("%s: tentative via navigateur headless", self.retailer)
+        result = render_page(url, follow_link_pattern=follow_link_pattern)
+        deals = extract_jsonld_products(result.html, self.retailer, url)
+        merged = {deal.dedupe_key(): deal for deal in deals}
+        for resp_url, data in result.json_responses:
+            for deal in extract_products_from_json(data, self.retailer, url):
+                merged.setdefault(deal.dedupe_key(), deal)
+        dump_debug(self.retailer, result)
+        return list(merged.values())
 
 
 JSONLD_RE = re.compile(

@@ -1,15 +1,18 @@
-"""Scraper Lidl Suisse — extrait les promotions de la semaine (JSON-LD)."""
+"""Scraper Lidl Suisse — promotions de la semaine.
+
+L'URL de la page change chaque semaine (identifiant tournant) ; on part de
+la page d'accueil et on suit le premier lien « promotions-de-la-semaine ».
+"""
 from __future__ import annotations
 
 from ..models import Deal
-from .base import BaseScraper, extract_jsonld_products
+from .base import BaseScraper
 
-OFFERS_URL = "https://www.lidl.ch/c/fr-CH/offres/a10006065"
+HOME_URL = "https://www.lidl.ch/"
 
 
 class LidlScraper(BaseScraper):
     retailer = "Lidl"
 
     def _fetch(self) -> list[Deal]:
-        html = self._get_html(OFFERS_URL)
-        return extract_jsonld_products(html, self.retailer, OFFERS_URL)
+        return self._harvest(HOME_URL, follow_link_pattern="promotions-de-la-semaine")

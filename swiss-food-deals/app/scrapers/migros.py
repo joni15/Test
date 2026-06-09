@@ -1,20 +1,34 @@
-"""Scraper Migros — utilise l'API de recherche produits avec un jeton invité."""
+"""Scraper Migros — API de recherche produits (jeton invité), repli navigateur."""
 from __future__ import annotations
+
+import logging
 
 from ..models import Deal
 from .base import BaseScraper
+
+logger = logging.getLogger(__name__)
 
 GUEST_TOKEN_URL = (
     "https://www.migros.ch/authentication/public/v1/api/guest"
     "?authorizationNotRequired=true"
 )
 SEARCH_URL = "https://www.migros.ch/onesearch-oc-seaapi/public/v5/search"
+OFFERS_PAGE = "https://www.migros.ch/fr/offers/home"
 
 
 class MigrosScraper(BaseScraper):
     retailer = "Migros"
 
     def _fetch(self) -> list[Deal]:
+        try:
+            deals = self._fetch_api()
+            if deals:
+                return deals
+        except Exception:
+            logger.info("Migros: API directe inaccessible, repli navigateur")
+        return self._harvest(OFFERS_PAGE)
+
+    def _fetch_api(self) -> list[Deal]:
         with self._client() as client:
             token_resp = client.post(GUEST_TOKEN_URL)
             token_resp.raise_for_status()

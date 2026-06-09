@@ -28,7 +28,18 @@ jobs:
 
       - name: Scraper les offres
         working-directory: swiss-food-deals
+        env:
+          DEALS_DEBUG_DIR: ${{ github.workspace }}/debug
         run: python -m app.cli aggregate --output ../data/deals.json
+
+      - name: Publier les artefacts de diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-scrapers
+          path: debug/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Committer le flux
         run: |

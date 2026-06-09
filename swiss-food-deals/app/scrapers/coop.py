@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from ..models import Deal
-from .base import BaseScraper, extract_jsonld_products
+from .base import BaseScraper
 
 ACTIONS_URL = "https://www.coop.ch/fr/actions.html"
 
@@ -11,5 +11,4 @@ class CoopScraper(BaseScraper):
     retailer = "Coop"
 
     def _fetch(self) -> list[Deal]:
-        html = self._get_html(ACTIONS_URL)
-        return extract_jsonld_products(html, self.retailer, ACTIONS_URL)
+        return self._harvest(ACTIONS_URL)
